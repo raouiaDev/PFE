@@ -8,7 +8,8 @@ const campaignSchema = new mongoose.Schema({
     scheduledTime: { type: Date, required: true },
     status: { type: String, enum: ['en attente', 'publié', 'échec'], default: 'en attente' },
     publishToFacebook: { type: Boolean, default: false },
-    publishToInstagram: { type: Boolean, default: false }
+    publishToInstagram: { type: Boolean, default: false },
+    imageUrl: { type: String, required: false }  // Ajout du champ imageUrl pour l'image Instagram
 });
 
-module.exports = mongoose.model('Campaign', campaignSchema);
+module.exports = mongoose.model('Campaigns', campaignSchema);

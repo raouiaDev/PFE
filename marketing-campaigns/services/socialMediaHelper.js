@@ -1,52 +1,51 @@
 const axios = require('axios');
+require('dotenv').config();
 
+// Fonction pour publier sur Facebook avec une image
 const publishToFacebook = async (campaign) => {
-    const { description } = campaign;
-    const facebookPageId = process.env.FACEBOOK_PAGE_ID;
-    const facebookAccessToken = process.env.FACEBOOK_ACCESS_TOKEN;
-    const url = `https://graph.facebook.com/v22.0/${facebookPageId}/feed`;
+    const { description, imageUrl } = campaign;
+    const url = `https://graph.facebook.com/v22.0/${process.env.FACEBOOK_PAGE_ID}/photos`;
 
     try {
         const response = await axios.post(url, {
-            message: description,
-            access_token: facebookAccessToken
+            url: imageUrl,
+            caption: description,
+            access_token: process.env.FACEBOOK_ACCESS_TOKEN,
         });
-        console.log(`🚀 Publication réussie sur Facebook : ${response.data.id}`);
+        console.log(`🚀 Publication réussie sur Facebook avec l'image : ${response.data.id}`);
     } catch (error) {
         console.error(`❌ Erreur de publication sur Facebook :`, error.response?.data || error.message);
     }
 };
 
+// Fonction pour publier sur Instagram avec une image
 const publishToInstagram = async (campaign) => {
-    const { description } = campaign;
+    const { imageUrl, description } = campaign;
     const instagramAccountId = process.env.INSTAGRAM_ACCOUNT_ID;
     const instagramAccessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
-    const url = `https://graph.facebook.com/v22.0/${instagramAccountId}/media`;
 
     try {
-        const response = await axios.post(url, {
+        // Étape 1 : Télécharger l'image sur Instagram
+        const mediaUploadUrl = `https://graph.facebook.com/v22.0/${instagramAccountId}/media`;
+        const mediaResponse = await axios.post(mediaUploadUrl, {
+            image_url: imageUrl,
             caption: description,
-            access_token: instagramAccessToken
+            access_token: instagramAccessToken,
         });
-        console.log(`🚀 Publication réussie sur Instagram : ${response.data.id}`);
+
+        console.log(`🚀 Image téléchargée sur Instagram : ${mediaResponse.data.id}`);
+
+        // Étape 2 : Publier le média téléchargé sur Instagram
+        const publishUrl = `https://graph.facebook.com/v22.0/${instagramAccountId}/media_publish`;
+        const publishResponse = await axios.post(publishUrl, {
+            creation_id: mediaResponse.data.id,
+            access_token: instagramAccessToken,
+        });
+
+        console.log(`🚀 Publication réussie sur Instagram : ${publishResponse.data.id}`);
     } catch (error) {
-        console.error(`❌ Erreur de publication sur Instagram :`, error.response?.data || error.message);
+        console.error(`❌ Erreur de publication sur Instagram : ${error.message}`);
     }
 };
 
-const publishCampaign = async (campaign) => {
-    try {
-        if (campaign.publishToFacebook) await publishToFacebook(campaign);
-        if (campaign.publishToInstagram) await publishToInstagram(campaign);
-
-        campaign.status = "publié";
-        await campaign.save();
-        console.log(`✅ Campagne publiée : ${campaign.title}`);
-    } catch (error) {
-        console.error(`❌ Erreur de publication :`, error.message);
-        campaign.status = "échec";
-        await campaign.save();
-    }
-};
-
-module.exports = { publishToFacebook, publishToInstagram, publishCampaign };
+module.exports = { publishToFacebook, publishToInstagram };
